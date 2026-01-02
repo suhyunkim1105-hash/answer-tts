@@ -5,30 +5,133 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>답안 TTS</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#0b0f14; color:#e9eef5; }
+    :root { --topbar-h: 74px; }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background:#0b0f14;
+      color:#e9eef5;
+    }
+
+    /* ✅ 상단 고정 바 공간 확보 */
+    .spacer { height: var(--topbar-h); }
+
     .wrap { max-width: 920px; margin: 0 auto; padding: 18px; }
+
     h1 { margin: 8px 0 14px; font-size: 20px; }
-    .card { background:#121826; border:1px solid #22304a; border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-    textarea { width:100%; min-height: 180px; background:#0e1422; color:#e9eef5; border:1px solid #22304a; border-radius:12px; padding:12px; font-size:14px; line-height:1.5; resize: vertical; }
-    .row { display:flex; gap:10px; flex-wrap: wrap; margin-top:12px; }
-    .row > * { flex: 1; min-width: 180px; }
-    label { display:block; font-size:12px; opacity:.85; margin-bottom:6px; }
-    input, select, button { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:12px; border:1px solid #22304a; background:#0e1422; color:#e9eef5; }
-    button { cursor:pointer; font-weight:700; }
+    .pill {
+      display:inline-block; padding:2px 8px; border-radius:999px;
+      border:1px solid #22304a; background:#0e1422; font-size:12px; margin-left:6px;
+    }
+
+    .card {
+      background:#121826;
+      border:1px solid #22304a;
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    label { display:block; font-size:12px; opacity:.85; margin: 10px 0 6px; }
+
+    input, select, button, textarea {
+      width:100%;
+      box-sizing:border-box;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #22304a;
+      background:#0e1422;
+      color:#e9eef5;
+      font-size:14px;
+    }
+
+    textarea {
+      height: 120px;        /* ✅ 작게 고정 */
+      resize: none;         /* ✅ 늘리지 못하게 */
+      overflow-y: auto;     /* ✅ 내부 스크롤 */
+      line-height: 1.5;
+    }
+
+    .row { display:flex; gap:10px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 160px; }
+
+    button { cursor:pointer; font-weight:800; }
     button.primary { background:#2563eb; border-color:#2563eb; }
     button.warn { background:#b91c1c; border-color:#b91c1c; }
     button.ghost { background:transparent; }
+
     .muted { font-size:12px; opacity:.8; margin-top:10px; }
-    .log { margin-top:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; white-space:pre-wrap; background:#0e1422; border:1px solid #22304a; border-radius:12px; padding:10px; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #22304a; background:#0e1422; font-size:12px; margin-left:6px; }
+
+    .log {
+      margin-top:12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size:12px;
+      white-space:pre-wrap;
+      background:#0e1422;
+      border:1px solid #22304a;
+      border-radius:12px;
+      padding:10px;
+    }
+
+    .lockTitle { margin-top: 14px; font-size: 12px; opacity: .9; }
+    .locked input, .locked select { opacity: .85; cursor: not-allowed; }
+
+    /* ✅ 상단 고정 컨트롤 바(항상 보임) */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 9999;
+      background: rgba(18, 24, 38, 0.98);
+      border-bottom: 1px solid #22304a;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 25px rgba(0,0,0,.35);
+    }
+    .topbarInner {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 12px 18px;
+    }
+    .topbar .row > * { min-width: 120px; }
+    .statusMini {
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: .85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
+
 <body>
+  <!-- ✅ 항상 보이는 상단 컨트롤 -->
+  <div class="topbar">
+    <div class="topbarInner">
+      <div class="row">
+        <div style="flex:2; min-width:220px;">
+          <button class="primary" id="playBtn">▶ 재생</button>
+        </div>
+        <div>
+          <button class="ghost" id="pauseBtn">⏸ 일시정지/재개</button>
+        </div>
+        <div>
+          <button class="warn" id="stopBtn">■ 정지</button>
+        </div>
+      </div>
+      <div class="statusMini" id="miniStatus">대기 중…</div>
+    </div>
+  </div>
+
+  <!-- ✅ 고정바 높이만큼 아래로 밀기 -->
+  <div class="spacer"></div>
+
   <div class="wrap">
-    <h1>답안 TTS <span class="pill">번호+답 읽고 2초 쉬기 · 5회 반복</span></h1>
+    <h1>답안 TTS <span class="pill">고정 설정 · 5회 반복</span></h1>
 
     <div class="card">
-      <label for="answers">답안 붙여넣기 (한 줄에 하나 추천)</label>
+      <!-- ✅ 재생버튼 바로 아래 배치 -->
+      <label for="answers">정답 넣기 (한 줄에 하나) / 또는 한 줄로 “2 3 1 4 2” 붙여넣기</label>
       <textarea id="answers" placeholder="예)
 1번 2
 2번 3
@@ -36,51 +139,38 @@
 4번 4
 5번 2
 
-또는
-1 2
-2-3
-3:1"></textarea>
+또는 한 줄:
+2 3 1 4 2"></textarea>
 
-      <div class="row">
+      <div class="muted">
+        iPhone/Safari는 자동재생이 막혀서 <b>반드시 재생 버튼을 눌러야</b> 음성이 나와.
+      </div>
+
+      <div class="lockTitle">고정 설정(수정 불가)</div>
+      <div class="row locked">
         <div>
           <label>반복 횟수</label>
-          <input id="repeatCount" type="number" min="1" max="30" value="5" />
+          <input id="repeatCount" type="number" value="5" disabled />
         </div>
         <div>
           <label>문항 사이 쉬는 시간(초)</label>
-          <input id="pauseSec" type="number" min="0" max="10" step="0.5" value="2" />
+          <input id="pauseSec" type="number" value="2" disabled />
         </div>
         <div>
           <label>속도 (0.5~2)</label>
-          <input id="rate" type="number" min="0.5" max="2" step="0.1" value="1" />
+          <input id="rate" type="number" value="1" disabled />
         </div>
         <div>
           <label>피치 (0~2)</label>
-          <input id="pitch" type="number" min="0" max="2" step="0.1" value="1" />
+          <input id="pitch" type="number" value="1" disabled />
         </div>
       </div>
 
-      <div class="row">
-        <div style="flex:2; min-width:260px;">
-          <label>목소리(Voice)</label>
-          <select id="voice"></select>
-        </div>
+      <div class="row locked" style="margin-top:8px;">
         <div>
-          <label>&nbsp;</label>
-          <button class="primary" id="playBtn">▶ 재생</button>
+          <label>목소리(Voice) — 유나(ko-KR) 우선</label>
+          <select id="voice" disabled></select>
         </div>
-        <div>
-          <label>&nbsp;</label>
-          <button class="ghost" id="pauseBtn">⏸ 일시정지/재개</button>
-        </div>
-        <div>
-          <label>&nbsp;</label>
-          <button class="warn" id="stopBtn">■ 정지</button>
-        </div>
-      </div>
-
-      <div class="muted">
-        iPhone/Safari는 <b>반드시 버튼 눌러서</b> 재생해야 음성이 나와. (자동재생 차단 때문)
       </div>
 
       <div class="log" id="log">대기 중…</div>
@@ -89,17 +179,23 @@
 
 <script>
 (() => {
-  const elAnswers = document.getElementById('answers');
-  const elRepeat = document.getElementById('repeatCount');
-  const elPause  = document.getElementById('pauseSec');
-  const elRate   = document.getElementById('rate');
-  const elPitch  = document.getElementById('pitch');
-  const elVoice  = document.getElementById('voice');
-  const elLog    = document.getElementById('log');
+  // ✅ 고정값
+  const FIXED = {
+    repeatCount: 5,
+    pauseSec: 2,
+    rate: 1,
+    pitch: 1,
+    preferVoiceKeywords: ["유나", "Yuna"], // 기기마다 이름 달라서 키워드로
+  };
 
-  const playBtn  = document.getElementById('playBtn');
-  const pauseBtn = document.getElementById('pauseBtn');
-  const stopBtn  = document.getElementById('stopBtn');
+  const elAnswers = document.getElementById('answers');
+  const elVoice   = document.getElementById('voice');
+  const elLog     = document.getElementById('log');
+  const elMini    = document.getElementById('miniStatus');
+
+  const playBtn   = document.getElementById('playBtn');
+  const pauseBtn  = document.getElementById('pauseBtn');
+  const stopBtn   = document.getElementById('stopBtn');
 
   let voices = [];
   let abortFlag = false;
@@ -107,50 +203,93 @@
 
   function log(msg) {
     elLog.textContent = msg;
+    elMini.textContent = msg.split('\n')[0] || msg;
   }
 
   function normalizeLines(text) {
-    return text
-      .split(/\r?\n/g)
-      .map(s => s.trim())
-      .filter(Boolean);
+    return text.split(/\r?\n/g).map(s => s.trim()).filter(Boolean);
   }
 
-  // 다양한 입력 허용:
-  // "1번 2", "1 2", "1-2", "1:2", "1) 2" 등
-  function parseAnswers(text) {
+  // 기존: "1번 2", "1 2", "1-2", "1:2", "1)2" 등
+  function parseWithQuestionNumbers(text) {
     const lines = normalizeLines(text);
     const items = [];
-
     for (const line of lines) {
-      // 1) "1번 2" 형태 우선
       let m = line.match(/^\s*(\d+)\s*(?:번|번에|번은|번:|번\)|\)|\.|:|-)?\s*([A-Ea-e]|[1-5])\s*$/);
-      if (!m) {
-        // 2) "1 2" / "1-2" / "1:2" / "1)2"
-        m = line.match(/^\s*(\d+)\s*[-:)\s]+\s*([A-Ea-e]|[1-5])\s*$/);
-      }
+      if (!m) m = line.match(/^\s*(\d+)\s*[-:)\s]+\s*([A-Ea-e]|[1-5])\s*$/);
       if (!m) continue;
-
       const q = parseInt(m[1], 10);
       const aRaw = m[2].toString().trim();
       const a = /^[a-e]$/i.test(aRaw) ? aRaw.toUpperCase() : aRaw;
-
       items.push({ q, a });
     }
-
-    // 문항번호 기준 정렬(원하면 제거 가능)
     items.sort((x, y) => x.q - y.q);
-
     return items;
   }
 
-  function sleep(ms) {
-    return new Promise(res => setTimeout(res, ms));
+  // ✅ 추가: "2 3 1 4 2" / "A B C D E" / "23142" 같은 “정답만” 입력 → 1번부터 자동 매핑
+  function parseSequentialAnswers(text) {
+    const t = text.trim();
+    if (!t) return [];
+
+    // 줄바꿈 없고 "번"이 없을 때만 적극 변환(오동작 방지)
+    const hasNewline = /\r|\n/.test(t);
+    const hasBeon = t.includes("번");
+    if (hasNewline || hasBeon) return [];
+
+    // 1) 공백/콤마 등으로 분리
+    let tokens = t.split(/[^0-9A-Za-z]+/g).filter(Boolean);
+
+    // 2) 만약 "23142" 같이 붙어있으면 문자 단위로
+    if (tokens.length === 1 && /^[1-5A-Ea-e]+$/.test(tokens[0]) && tokens[0].length >= 2) {
+      tokens = tokens[0].split('');
+    }
+
+    // 허용 토큰만
+    const norm = tokens.map(x => x.trim()).filter(Boolean).map(x => /^[a-e]$/i.test(x) ? x.toUpperCase() : x);
+    if (!norm.length) return [];
+
+    const ok = norm.every(x => /^[1-5]$/.test(x) || /^[A-E]$/.test(x));
+    if (!ok) return [];
+
+    return norm.map((a, i) => ({ q: i + 1, a }));
   }
 
-  function getSelectedVoice() {
-    const idx = parseInt(elVoice.value || "0", 10);
-    return voices[idx] || null;
+  function parseAnswers(text) {
+    const a = parseWithQuestionNumbers(text);
+    if (a.length) return a;
+    return parseSequentialAnswers(text);
+  }
+
+  // ✅ 붙여넣기 순간 자동 변환(한 줄일 때만)
+  elAnswers.addEventListener('paste', (e) => {
+    try {
+      const clip = (e.clipboardData || window.clipboardData).getData('text');
+      const items = parseSequentialAnswers(clip);
+      if (items.length) {
+        e.preventDefault();
+        const converted = items.map(x => `${x.q}번 ${x.a}`).join('\n');
+        // 기존 내용 덮어쓰기(원하면 이어붙이기로 바꿔줄 수 있음)
+        elAnswers.value = converted;
+        log(`✅ 한 줄 입력 자동변환: ${items.length}개`);
+      }
+    } catch (_) {}
+  });
+
+  function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+  function pickFixedVoice() {
+    const lowerKeywords = FIXED.preferVoiceKeywords.map(k => k.toLowerCase());
+    const byName = voices.find(v => lowerKeywords.some(k => (v.name || "").toLowerCase().includes(k)));
+    if (byName) return byName;
+
+    const koDefault = voices.find(v => (v.lang || '').toLowerCase().startsWith('ko') && v.default);
+    if (koDefault) return koDefault;
+
+    const koAny = voices.find(v => (v.lang || '').toLowerCase().startsWith('ko'));
+    if (koAny) return koAny;
+
+    return voices[0] || null;
   }
 
   function speakOnce(text, { rate, pitch, voice } = {}) {
@@ -159,16 +298,13 @@
         reject(new Error('이 브라우저는 Web Speech TTS를 지원하지 않아.'));
         return;
       }
-
       const u = new SpeechSynthesisUtterance(text);
       u.lang = 'ko-KR';
-      if (typeof rate === 'number') u.rate = rate;
-      if (typeof pitch === 'number') u.pitch = pitch;
+      u.rate = rate;
+      u.pitch = pitch;
       if (voice) u.voice = voice;
-
       u.onend = () => resolve();
       u.onerror = (e) => reject(e);
-
       window.speechSynthesis.speak(u);
     });
   }
@@ -178,64 +314,47 @@
     isRunning = true;
 
     const items = parseAnswers(elAnswers.value);
-    const repeatCount = Math.max(1, Math.min(30, Number(elRepeat.value) || 5));
-    const pauseMs = Math.max(0, Math.min(10000, (Number(elPause.value) || 2) * 1000));
-    const rate = Math.max(0.5, Math.min(2, Number(elRate.value) || 1));
-    const pitch = Math.max(0, Math.min(2, Number(elPitch.value) || 1));
-    const voice = getSelectedVoice();
 
     if (!items.length) {
-      log("❌ 파싱된 답안이 없어. 예) '1번 2' 처럼 한 줄에 하나로 넣어줘.");
+      log("❌ 파싱된 답안이 없어. 예) '1번 2' 또는 한 줄 '2 3 1 4 2'로 넣어줘.");
       isRunning = false;
       return;
     }
 
-    log(`✅ 파싱 ${items.length}개\n` +
-        items.map(x => `${x.q}번 ${x.a}`).join('\n') +
-        `\n\n▶ ${repeatCount}회 반복 시작…`);
+    const repeatCount = FIXED.repeatCount;
+    const pauseMs = FIXED.pauseSec * 1000;
+    const rate = FIXED.rate;
+    const pitch = FIXED.pitch;
 
-    // iOS 대응: 기존 큐 제거
+    const voiceIdx = parseInt(elVoice.value || "0", 10);
+    const voice = voices[voiceIdx] || null;
+
+    log(`✅ 파싱 ${items.length}개 · ${repeatCount}회 반복 시작…`);
+
     window.speechSynthesis.cancel();
     await sleep(150);
 
     for (let r = 1; r <= repeatCount; r++) {
       if (abortFlag) break;
 
-      log(`▶ 진행: ${r}/${repeatCount}회\n` +
-          items.map(x => `${x.q}번 ${x.a}`).join('\n'));
+      log(`▶ 진행: ${r}/${repeatCount}회 (총 ${items.length}문항)`);
 
       for (let i = 0; i < items.length; i++) {
         if (abortFlag) break;
-
         const { q, a } = items[i];
-        const phrase = `${q}번 ${a}`;
-        await speakOnce(phrase, { rate, pitch, voice }).catch(() => {});
-
+        await speakOnce(`${q}번 ${a}`, { rate, pitch, voice }).catch(() => {});
         if (abortFlag) break;
         if (pauseMs > 0) await sleep(pauseMs);
       }
     }
 
     isRunning = false;
-    if (abortFlag) {
-      log("■ 정지됨.");
-    } else {
-      log("✅ 완료.");
-    }
+    log(abortFlag ? "■ 정지됨." : "✅ 완료.");
   }
 
   function loadVoices() {
-    voices = window.speechSynthesis.getVoices() || [];
+    voices = (window.speechSynthesis.getVoices() || []);
     elVoice.innerHTML = "";
-
-    // ko-KR 우선 상단 배치
-    const preferred = [];
-    const others = [];
-    for (const v of voices) {
-      if ((v.lang || '').toLowerCase().startsWith('ko')) preferred.push(v);
-      else others.push(v);
-    }
-    voices = [...preferred, ...others];
 
     voices.forEach((v, i) => {
       const opt = document.createElement('option');
@@ -244,36 +363,24 @@
       elVoice.appendChild(opt);
     });
 
-    // 기본 선택: ko 음성 중 default, 없으면 0
-    let idx = 0;
-    const koDefault = voices.findIndex(v => (v.lang || '').toLowerCase().startsWith('ko') && v.default);
-    const koAny = voices.findIndex(v => (v.lang || '').toLowerCase().startsWith('ko'));
-    if (koDefault >= 0) idx = koDefault;
-    else if (koAny >= 0) idx = koAny;
-    elVoice.value = String(idx);
+    const fixed = pickFixedVoice();
+    const idx = fixed ? voices.findIndex(v => v.name === fixed.name && v.lang === fixed.lang) : 0;
+    elVoice.value = String(Math.max(0, idx));
+    elVoice.disabled = true;
   }
 
+  // 버튼들
   playBtn.addEventListener('click', async () => {
-    if (!('speechSynthesis' in window)) {
-      log("❌ 이 브라우저는 TTS(Web Speech)를 지원하지 않아.");
-      return;
-    }
-    if (isRunning) {
-      log("이미 재생 중이야. 정지 후 다시 눌러줘.");
-      return;
-    }
+    if (!('speechSynthesis' in window)) { log("❌ 이 브라우저는 TTS를 지원하지 않아."); return; }
+    if (isRunning) { log("이미 재생 중이야. 정지 후 다시 눌러줘."); return; }
     await runTTS();
   });
 
   pauseBtn.addEventListener('click', () => {
     if (!('speechSynthesis' in window)) return;
     const s = window.speechSynthesis;
-    if (s.speaking && !s.paused) {
-      s.pause();
-      log(elLog.textContent + "\n(일시정지)");
-    } else if (s.paused) {
-      s.resume();
-    }
+    if (s.speaking && !s.paused) { s.pause(); log(elLog.textContent + "\n(일시정지)"); }
+    else if (s.paused) { s.resume(); }
   });
 
   stopBtn.addEventListener('click', () => {
@@ -281,7 +388,6 @@
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   });
 
-  // voices는 비동기로 뜨는 경우가 많아서 이벤트도 같이
   if ('speechSynthesis' in window) {
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
